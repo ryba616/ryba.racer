@@ -109,11 +109,13 @@ void Car::update1_60() {
 	static const float MAX_SPEED = 500.0f;
 	
 	static const float AIR_RESIST = 0.2f;
+	const float GROUND_RESIST = m_level->getResistance(m_position.x, m_position.y);
 	
 	static const float MAX_ANGLE = 50.0f;
 	
 	static const float MAX_TENACITY = 0.2f;
 	static const float MIN_TENACITY = 0.05f;
+	
 	
 	
 	const static float delta = (1000.f / 60.0f) / 1000.0f;
@@ -152,14 +154,9 @@ void Car::update1_60() {
 		}
 	}
 	
-	// air resistance
-		m_speed -= delta * AIR_RESIST * m_speed;
-	
-	// ground resistance
-	if (m_level != NULL) {
-		const float groundResist = m_level->getResistance(m_position.x, m_position.y);
-		m_speed -= delta * groundResist * m_speed;
-	}
+	// Resistance
+	const float finalResist = (1.0f - GROUND_RESIST) - (AIR_RESIST * (1.0f - GROUND_RESIST));
+	cl_log_event("debug", "%1", finalResist);
 	
 	// rotation
 	const float rad = m_rotation.to_radians(); // kąt autka w radianach
@@ -168,6 +165,7 @@ void Car::update1_60() {
 	if (m_boundHitTest) {
 		
 		// przeniesienie autka tak, by już się nie stykał z bandą
+		
 		m_position.x -= m_moveVector.x * 2 *delta;
 		m_position.y -= m_moveVector.y * 2 *delta;
 		
@@ -234,7 +232,7 @@ void Car::update1_60() {
 	// wektor o który zostanie przesunięte autko (już z poślizgiem)
 	CL_Vec2f realVector = m_moveVector + ( accelerationVector * tenacity );
 	realVector.normalize();
-	realVector *= fabs(m_speed);
+	realVector *= finalResist * fabs(m_speed);
 	m_moveVector = realVector;
 	
 	// nowa metoda oblicznia moveVectora
